@@ -10,27 +10,42 @@ provider "tencentcloud" {
   region     = var.region
 }
 
+provider "tencentcloud" {
+  alias = "gz"
+  region = "ap-guangzhou"
+}
+
+provider "tencentcloud" {
+  alias = "sg"
+  region = "ap-singapore"
+}
+
 resource "tencentcloud_vpc" "HubVPC" {
   name         = var.vpc_name_hub
   cidr_block   = var.vpc_cidr_hub
   is_multicast = var.multicast
+  
 }
 
 resource "tencentcloud_vpc" "SpokeVPC1" {
   name         = var.vpc_name_spoke1
   cidr_block   = var.vpc_cidr_spoke1
   is_multicast = var.multicast
+
+  provider = tencentcloud.gz
 }
 
 resource "tencentcloud_vpc" "SpokeVPC2" {
   name         = var.vpc_name_spoke2
   cidr_block   = var.vpc_cidr_spoke2
   is_multicast = var.multicast
+  
+  provider = tencentcloud.sg
 }
 
 resource "tencentcloud_subnet" "bastion-subnet" {
   name              = var.subnet_name_bastion
-  availability_zone = "${var.region}-${var.AZ-1}"
+  availability_zone = var.hub-az
   vpc_id            = tencentcloud_vpc.HubVPC.id
   cidr_block        = cidrsubnet("${var.vpc_cidr_hub}", 8, 0) #10.0.0.0/24
 
@@ -41,7 +56,7 @@ resource "tencentcloud_subnet" "bastion-subnet" {
 
 resource "tencentcloud_subnet" "firewall-subnet" {
   name              = var.subnet_name_firewall
-  availability_zone = "${var.region}-${var.AZ-1}"
+  availability_zone = var.hub-az
   vpc_id            = tencentcloud_vpc.HubVPC.id
   cidr_block        = cidrsubnet("${var.vpc_cidr_hub}", 8, 1) #10.0.1.0/24
 
@@ -52,7 +67,7 @@ resource "tencentcloud_subnet" "firewall-subnet" {
 
 resource "tencentcloud_subnet" "vpngateway-subnet" {
   name              = var.subnet_name_vpn
-  availability_zone = "${var.region}-${var.AZ-1}"
+  availability_zone = var.hub-az
   vpc_id            = tencentcloud_vpc.HubVPC.id
   cidr_block        = cidrsubnet("${var.vpc_cidr_hub}", 8, 2) #10.0.2.0/24
 
@@ -63,24 +78,26 @@ resource "tencentcloud_subnet" "vpngateway-subnet" {
 
 resource "tencentcloud_subnet" "spoke1-subnet" {
   name              = var.subnet_name_spoke1
-  availability_zone = "${var.region}-${var.AZ-1}"
+  availability_zone = var.spoke1-az
   vpc_id            = tencentcloud_vpc.SpokeVPC1.id
   cidr_block        = cidrsubnet("${var.vpc_cidr_spoke1}", 8, 0) #10.1.0.0/24
 
   # Optional but highly recommended parameters
   #route_table_id      = tencentcloud_route_table.rt-public01.id
   is_multicast = var.multicast
+  provider = tencentcloud.gz
 }
 
 resource "tencentcloud_subnet" "spoke2-subnet" {
   name              = var.subnet_name_spoke2
-  availability_zone = "${var.region}-${var.AZ-1}"
+  availability_zone = var.spoke2-az
   vpc_id            = tencentcloud_vpc.SpokeVPC2.id
   cidr_block        = cidrsubnet("${var.vpc_cidr_spoke2}", 8, 0) #10.1.1.0/24
 
   # Optional but highly recommended parameters
   #route_table_id      = tencentcloud_route_table.rt-public01.id
   is_multicast = var.multicast
+  provider = tencentcloud.sg
 }
 
 data "tencentcloud_instance_types" "bastion_instance_types" {
@@ -97,7 +114,7 @@ data "tencentcloud_instance_types" "bastion_instance_types" {
 resource "tencentcloud_instance" "bastion-host" {
   instance_name              = "bastion-host"
   #availability_zone          = data.tencentcloud_availability_zones.bastion_zone.zones.0.name
-  availability_zone          = "${var.region}-${var.AZ-1}"
+  availability_zone          = var.hub-az
   image_id                   = "img-eb30mz89"
   instance_type              = "S3.MEDIUM2"
   system_disk_type           = "CLOUD_PREMIUM"
@@ -211,4 +228,33 @@ resource "tencentcloud_security_group_lite_rule" "spoke2-sg-rules" {
   ]
 }
 
-#Need to add routing table after peering
+#CCN 
+
+resource "tencentcloud_ccn" "main" {
+  name                 = "main-ccn"
+  description          = "CCN description"
+  qos                  = "AG"
+  charge_type          = "POSTPAID"
+  bandwidth_limit_type = "INTER_REGION_LIMIT"
+}
+
+resource "tencentcloud_ccn_attachment" "hub-ccn" {
+  ccn_id          = tencentcloud_ccn.main.id
+  instance_type   = "VPC"
+  instance_id     = tencentcloud_vpc.HubVPC.id
+  instance_region = var.hub-region
+}
+
+resource "tencentcloud_ccn_attachment" "spoke1-ccn" {
+  ccn_id          = tencentcloud_ccn.main.id
+  instance_type   = "VPC"
+  instance_id     = tencentcloud_vpc.SpokeVPC1.id
+  instance_region = var.spoke1-region
+}
+
+resource "tencentcloud_ccn_attachment" "spoke2-ccn" {
+  ccn_id          = tencentcloud_ccn.main.id
+  instance_type   = "VPC"
+  instance_id     = tencentcloud_vpc.SpokeVPC2.id
+  instance_region = var.spoke2-region
+}

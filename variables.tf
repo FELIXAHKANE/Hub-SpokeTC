@@ -76,6 +76,42 @@ variable "AZ-1" {
   description = "The value for the first availability zone"
 }
 
+variable "hub-region" {
+  type        = string
+  default     = "eu-frankfurt"
+  description = "The name of the region"
+}
+variable "hub-az" {
+  type        = string
+  default     = "eu-frankfurt-1"
+  description = "The name of the region"
+}
+
+variable "spoke1-region" {
+  type        = string
+  default     = "ap-guangzhou"
+  description = "The name of the region"
+}
+
+variable "spoke1-az" {
+  type        = string
+  default     = "ap-guangzhou-1"
+  description = "The name of the region"
+}
+
+variable "spoke2-region" {
+  type        = string
+  default     = "ap-singapore"
+  description = "The name of the region"
+}
+
+
+variable "spoke2-az" {
+  type        = string
+  default     = "ap-singapore-1"
+  description = "The name of the region"
+}
+
 variable "subnet_name_bastion" {
   type        = string
   default     = "bastion-hub-subnet"
