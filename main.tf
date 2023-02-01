@@ -61,7 +61,6 @@ resource "tencentcloud_subnet" "firewall-subnet" {
   cidr_block        = cidrsubnet("${var.vpc_cidr_hub}", 8, 1) #10.0.1.0/24
 
   # Optional but highly recommended parameters
-  #route_table_id      = tencentcloud_route_table.rt-public01.id
   is_multicast = var.multicast
 }
 
@@ -72,7 +71,6 @@ resource "tencentcloud_subnet" "vpngateway-subnet" {
   cidr_block        = cidrsubnet("${var.vpc_cidr_hub}", 8, 2) #10.0.2.0/24
 
   # Optional but highly recommended parameters
-  #route_table_id      = tencentcloud_route_table.rt-public01.id
   is_multicast = var.multicast
 }
 
@@ -83,7 +81,6 @@ resource "tencentcloud_subnet" "spoke1-subnet" {
   cidr_block        = cidrsubnet("${var.vpc_cidr_spoke1}", 8, 0) #10.1.0.0/24
 
   # Optional but highly recommended parameters
-  #route_table_id      = tencentcloud_route_table.rt-public01.id
   is_multicast = var.multicast
   provider = tencentcloud.gz
 }
@@ -110,8 +107,8 @@ data "tencentcloud_instance_types" "bastion_instance_types" {
   memory_size    = 1
 }
 
-#Deploy Bastion CVM instance
-resource "tencentcloud_instance" "bastion-host" {
+#Deploy two Bastion CVM instances
+/*resource "tencentcloud_instance" "bastion-host" { 
   instance_name              = "bastion-host"
   #availability_zone          = data.tencentcloud_availability_zones.bastion_zone.zones.0.name
   availability_zone          = var.hub-az
@@ -136,8 +133,9 @@ resource "tencentcloud_instance" "bastion-host" {
   tags = {
     tagKey = "tagValue"
   }
-}
+}*/
 
+#Security group for the subnet
 resource "tencentcloud_security_group" "bastion-sg" {
   name = "bastion-sg"
 }
@@ -146,13 +144,13 @@ resource "tencentcloud_security_group_lite_rule" "bastion-sg-rules" {
   security_group_id = tencentcloud_security_group.bastion-sg.id
 
   ingress = [
-    "ACCEPT#0.0.0.0/0#443#TCP",
-    "ACCEPT#0.0.0.0/0#80,22,3389#TCP"
+    "DROP#0.0.0.0/0#ALL#ALL",
+    #"DROP#0.0.0.0/0#80,22,3389#TCP"
   ]
 
   egress = [
-    "ACCEPT#0.0.0.0/0#443#TCP",
-    "ACCEPT#0.0.0.0/0#80,22,3389#TCP"
+    "DROP#0.0.0.0/0#ALL#ALL",
+    #"DROP#0.0.0.0/0#80,22,3389#TCP"
   ]
 }
 
@@ -164,13 +162,13 @@ resource "tencentcloud_security_group_lite_rule" "firewall-sg-rules" {
   security_group_id = tencentcloud_security_group.firewall-sg.id
 
   ingress = [
-    "ACCEPT#0.0.0.0/0#443#TCP",
-    #"ACCEPT#0.0.0.0/0#80,22,3389#TCP"
+    "DROP#0.0.0.0/0#ALL#ALL",
+    #"DROP#0.0.0.0/0#80,22,3389#TCP"
   ]
 
   egress = [
-    "ACCEPT#0.0.0.0/0#443#TCP",
-    #"ACCEPT#0.0.0.0/0#80,22,3389#TCP"
+    "DROP#0.0.0.0/0#ALL#ALL",
+    #"DROP#0.0.0.0/0#80,22,3389#TCP"
   ]
 }
 
@@ -182,65 +180,68 @@ resource "tencentcloud_security_group_lite_rule" "vpn-sg-rules" {
   security_group_id = tencentcloud_security_group.vpn-sg.id
 
   ingress = [
-    "ACCEPT#0.0.0.0/0#443#TCP",
-    #"ACCEPT##80,22,3389#TCP"
+    "DROP#0.0.0.0/0#ALL#ALL",
+    #"DROP#0.0.0.0/0#80,22,3389#TCP"
   ]
 
   egress = [
-    "ACCEPT#0.0.0.0/0#443#TCP",
-    #"ACCEPT#0.0.0.0/0#80,22,3389#TCP"
+    "DROP#0.0.0.0/0#ALL#ALL",
+    #"DROP#0.0.0.0/0#80,22,3389#TCP"
   ]
 }
 
 resource "tencentcloud_security_group" "spoke1-sg" {
   name = "spoke1-sg"
+  provider = tencentcloud.gz
 }
 
 resource "tencentcloud_security_group_lite_rule" "spoke1-sg-rules" {
   security_group_id = tencentcloud_security_group.spoke1-sg.id
 
   ingress = [
-    "ACCEPT#0.0.0.0/0#443#TCP",
-    #"ACCEPT#0.0.0.0/0#80,22,3389#TCP"
+    "DROP#0.0.0.0/0#ALL#ALL",
+    #"DROP#0.0.0.0/0#80,22,3389#TCP"
   ]
 
   egress = [
-    "ACCEPT#0.0.0.0/0#443#TCP",
-    #"ACCEPT#0.0.0.0/0#80,22,3389#TCP"
+    "DROP#0.0.0.0/0#ALL#ALL",
+    #"DROP#0.0.0.0/0#80,22,3389#TCP"
   ]
+  provider = tencentcloud.gz
 }
 
 resource "tencentcloud_security_group" "spoke2-sg" {
   name = "spoke2-sg"
+  provider = tencentcloud.sg
 }
 
 resource "tencentcloud_security_group_lite_rule" "spoke2-sg-rules" {
   security_group_id = tencentcloud_security_group.spoke2-sg.id
 
   ingress = [
-    "ACCEPT#0.0.0.0/0#443#TCP",
-    #"ACCEPT#0.0.0.0/0#80,22,3389#TCP"
+    "DROP#0.0.0.0/0#ALL#ALL",
+    #"DROP#0.0.0.0/0#80,22,3389#TCP"
   ]
 
   egress = [
-    "ACCEPT#0.0.0.0/0#443#TCP",
-    #"ACCEPT#0.0.0.0/0#80,22,3389#TCP"
+    "DROP#0.0.0.0/0#ALL#ALL",
+    #"DROP#0.0.0.0/0#80,22,3389#TCP"
   ]
+  provider = tencentcloud.sg
 }
 
-#CCN 
-
+#CCN association
 resource "tencentcloud_ccn" "main" {
   name                 = "main-ccn"
   description          = "CCN description"
-  qos                  = "AG"
+  qos                  = "AG" # AG for CCN Silver Support
   charge_type          = "POSTPAID"
   bandwidth_limit_type = "INTER_REGION_LIMIT"
 }
 
 resource "tencentcloud_ccn_attachment" "hub-ccn" {
   ccn_id          = tencentcloud_ccn.main.id
-  instance_type   = "VPC"
+  instance_type   = "VPC" # VPC, DIRECTCONNECT, BMVPC and VPNGW
   instance_id     = tencentcloud_vpc.HubVPC.id
   instance_region = var.hub-region
 }
@@ -258,3 +259,4 @@ resource "tencentcloud_ccn_attachment" "spoke2-ccn" {
   instance_id     = tencentcloud_vpc.SpokeVPC2.id
   instance_region = var.spoke2-region
 }
+
