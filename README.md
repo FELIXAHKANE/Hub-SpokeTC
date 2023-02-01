@@ -18,11 +18,12 @@ For Terraform setup, please refer to https://developer.hashicorp.com/terraform/d
 <img src="./images/HubSpoke.png">
 
 ## Components 
- - VPC
+ - VPC : Frankfurt, Guangzhou, Singapore (others to be done)
  - Subnets
- - Security Groups
- - CCN (Cloud Connect Network)
+ - Security Groups and Rules
+ - CCN (Cloud Connect Network) : allowing the differents VPC to cross-connect.
  - Tags for TC resources
+ - Bastions instances (optional)
 
 ## How to run
 ```
